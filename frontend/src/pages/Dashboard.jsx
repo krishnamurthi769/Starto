@@ -25,6 +25,15 @@ const Dashboard = () => {
     // Ref for scrolling to results
     const resultsRef = useRef(null);
 
+    const DEFAULT_CATEGORIES = [
+        { id: 1, name: "Cafe" },
+        { id: 2, name: "Gym" },
+        { id: 3, name: "Coworking" },
+        { id: 4, name: "Restaurant" },
+        { id: 5, name: "Tech Startup" },
+        { id: 6, name: "Studio" }
+    ];
+
     const contextOptions = [
         "Solo / Bootstrap (Low Budget)",
         "Small Team / Seed (Medium Budget)",
@@ -37,9 +46,15 @@ const Dashboard = () => {
         const loadInitData = async () => {
             try {
                 const cats = await getCategories();
-                setCategories(cats);
+                if (cats && cats.length > 0) {
+                    setCategories(cats);
+                } else {
+                    console.warn("No categories found in DB, using defaults");
+                    setCategories(DEFAULT_CATEGORIES);
+                }
             } catch (error) {
-                console.error("Failed to load init data", error);
+                console.error("Failed to load init data, using defaults", error);
+                setCategories(DEFAULT_CATEGORIES);
             }
         };
         loadInitData();
