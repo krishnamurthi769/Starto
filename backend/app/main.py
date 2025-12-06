@@ -8,7 +8,12 @@ app = FastAPI(title="Starto API", description="AI-Powered Startup Intelligence")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=[
+        "http://localhost:5173", 
+        "http://localhost:5174", 
+        "https://starto-1.onrender.com", 
+        "https://starto.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

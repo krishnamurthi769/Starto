@@ -97,7 +97,8 @@ const MapComponent = ({ onLocationSelect, selectedLocation }) => {
                 // Assuming proxy set up or direct call if on same domain.
                 // Using relative path for now, assuming api.js base URL configuration handles it 
                 // OR simpler fetch if needed. here we use the backend route we just made.
-                const response = await fetch(`http://localhost:8000/live-flights?lat=${center.lat}&lng=${center.lng}&radius_km=100`);
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+                const response = await fetch(`${API_URL}/live-flights?lat=${center.lat}&lng=${center.lng}&radius_km=100`);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.flights) {
