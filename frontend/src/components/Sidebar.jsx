@@ -20,10 +20,13 @@ const Sidebar = () => {
         <motion.aside
             initial={{ x: -100 }}
             animate={{ x: 0 }}
-            className="fixed left-4 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col gap-6 p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl"
+            className="fixed left-4 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col gap-6 p-4 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl print:hidden"
         >
-            <div className="p-2 bg-white/10 rounded-xl mb-4">
+            <div className="p-2 bg-white/10 rounded-xl mb-4 relative">
                 <img src={logo} alt="S" className="w-6 h-6 object-contain" />
+                <div className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-blue-500 rounded-full text-[8px] font-bold text-white border border-blue-400">
+                    BETA
+                </div>
             </div>
 
             {navItems.map((item) => {

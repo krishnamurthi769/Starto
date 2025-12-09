@@ -9,8 +9,15 @@ export const api = axios.create({
     },
 });
 
-export const analyzeLocation = async (lat, lng, category, context, location_name) => {
-    const response = await api.post('/analyze', { lat, lng, category, context, location_name });
+export const analyzeLocation = async (lat, lng, businessType, city, area, context) => {
+    const response = await api.post('/analyze', {
+        lat,
+        lng,
+        businessType,
+        city,
+        area,
+        context
+    });
     return response.data;
 };
 

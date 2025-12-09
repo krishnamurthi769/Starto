@@ -6,3 +6,4 @@ python-dotenv
 openai
 psycopg2-binary
 requests
+googlemaps

@@ -2,13 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Search, Loader2, BarChart3, Settings, Home as HomeIcon, LogOut, TrendingUp, Users, ArrowDown, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import MapComponent from '../components/MapComponent';
 import ScoreCard from '../components/ScoreCard';
 import AIInsightBox from '../components/AIInsightBox';
-import FreelancerList from '../components/FreelancerList';
-import WorkspaceList from '../components/WorkspaceList';
-import InvestorGuidance from '../components/InvestorGuidance';
+import NearbyTalent from '../components/NearbyTalent';
+import SpaceInsights from '../components/SpaceInsights';
+import FundingGuidance from '../components/FundingGuidance';
 import { analyzeLocation, getCategories } from '../services/api';
 import Sidebar from '../components/Sidebar';
 
@@ -16,6 +15,7 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [selectedLocationName, setSelectedLocationName] = useState('Selected Location');
+    const [locationDetails, setLocationDetails] = useState({ city: '', area: '' });
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedContext, setSelectedContext] = useState('');
     const [categories, setCategories] = useState([]);
@@ -49,11 +49,9 @@ const Dashboard = () => {
                 if (cats && cats.length > 0) {
                     setCategories(cats);
                 } else {
-                    console.warn("No categories found in DB, using defaults");
                     setCategories(DEFAULT_CATEGORIES);
                 }
             } catch (error) {
-                console.error("Failed to load init data, using defaults", error);
                 setCategories(DEFAULT_CATEGORIES);
             }
         };
@@ -69,6 +67,7 @@ const Dashboard = () => {
                 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
                 if (!apiKey) {
                     setSelectedLocationName("Lat: " + selectedLocation.lat.toFixed(2));
+                    setLocationDetails({ city: "Unknown City", area: "Unknown Area" });
                     return;
                 }
 
@@ -83,13 +82,18 @@ const Dashboard = () => {
                     for (let comp of addressComponents) {
                         if (comp.types.includes("locality")) city = comp.long_name;
                         if (comp.types.includes("sublocality")) locality = comp.long_name;
+                        if (!city && comp.types.includes("administrative_area_level_2")) city = comp.long_name;
                     }
 
+                    const finalCity = city || "Unknown City";
+                    const finalArea = locality || city || "Selected Area";
+
                     setSelectedLocationName(locality ? `${locality}, ${city}` : (city || "Selected Area"));
+                    setLocationDetails({ city: finalCity, area: finalArea });
                 }
             } catch (error) {
-                console.error("Geocoding failed", error);
                 setSelectedLocationName("Custom Location");
+                setLocationDetails({ city: "Unknown City", area: "Custom Location" });
             }
         };
         fetchLocationName();
@@ -104,10 +108,10 @@ const Dashboard = () => {
                 selectedLocation.lat,
                 selectedLocation.lng,
                 selectedCategory,
-                selectedContext,
-                selectedLocationName
+                locationDetails.city,
+                locationDetails.area,
+                selectedContext
             );
-            console.log("Analysis Result:", result);
             setData(result);
 
             // Scroll to results after a slight delay for smooth transition
@@ -129,7 +133,7 @@ const Dashboard = () => {
             <Sidebar />
 
             <main className="relative z-10 w-full">
-                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-auto max-w-5xl mx-auto drop-shadow-2xl">
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-auto max-w-5xl mx-auto drop-shadow-2xl print:hidden">
                     <motion.div
                         initial={{ y: -50, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
@@ -202,6 +206,7 @@ const Dashboard = () => {
                         <MapComponent
                             onLocationSelect={setSelectedLocation}
                             selectedLocation={selectedLocation}
+                            competitors={data?.competitors}
                         />
                     </div>
 
@@ -234,92 +239,58 @@ const Dashboard = () => {
                                 >
                                     {/* 1. Executive Summary Header */}
                                     <div className="text-center space-y-4 mb-16">
-                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
-                                            Feasibility Report Generated
+                                        <div className="flex items-center justify-center gap-4">
+                                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest">
+                                                Feasibility Report Generated
+                                            </div>
+                                            <button
+                                                onClick={() => window.print()}
+                                                className="print:hidden flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs font-bold uppercase tracking-widest transition-colors"
+                                            >
+                                                <ArrowDown className="w-3 h-3" /> Download PDF
+                                            </button>
                                         </div>
                                         <h2 className="text-5xl md:text-6xl font-bold text-white tracking-tight">
                                             {selectedCategory} <span className="text-secondary font-light">in</span> <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">{selectedLocationName}</span>
                                         </h2>
                                         <p className="text-xl text-secondary max-w-2xl mx-auto">
-                                            AI-driven analysis suggests a <strong className="text-white">{data.demand_score > 70 ? "High" : "Moderate"} Demand</strong> opportunity with {data.competition_score > 70 ? "significant" : "manageable"} competition.
+                                            AI-driven analysis suggests a <strong className="text-white">{data.marketLandscape?.demandLevel} Demand</strong> opportunity with <strong className="text-white">{data.marketLandscape?.riskCategory}</strong> profile.
+                                        </p>
+                                        <p className="text-xs text-secondary/40 max-w-lg mx-auto italic">
+                                            "This analysis is based on historical and publicly available data to support decision-making, not to guarantee outcomes."
                                         </p>
                                     </div>
 
-                                    {/* 2. Key Metrics Grid */}
+                                    {/* SECTION 1: MARKET LANDSCAPE (Scorecards + AI) */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                         <ScoreCard
-                                            demand={data.demand_score}
-                                            competition={data.competition_score}
-                                            risk={data.risk_level}
-                                            breakdown={data.breakdown}
+                                            demand={data.marketLandscape?.demandLevel === 'High' ? 90 : (data.marketLandscape?.demandLevel === 'Low' ? 30 : 60)}
+                                            demandText={data.marketLandscape?.demandLevel}
+                                            competition={data.marketLandscape?.riskScore}
+                                            risk={data.marketLandscape?.riskCategory}
+                                            breakdown={[
+                                                { label: "Competition Density", value: data.marketLandscape?.competitionLevel, color: "text-white" },
+                                                { label: "Demand Signal", value: data.marketLandscape?.demandLevel, color: "text-blue-400" },
+                                                { label: "Risk Category", value: data.marketLandscape?.riskCategory, color: data.marketLandscape?.riskCategory?.includes("High") ? "text-red-500" : "text-green-500" }
+                                            ]}
                                         />
-                                        <AIInsightBox insight={data.ai_insight} />
+                                        <AIInsightBox insight={data.marketLandscape?.aiSummary} />
                                     </div>
 
-                                    {/* 3. Deep Dive Sections */}
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                                        {/* Left Col: Competitors */}
-                                        <div className="space-y-8">
-                                            <div className="flex items-center gap-4 mb-6">
-                                                <div className="p-3 rounded-2xl bg-purple-500/10 text-purple-400"><Users className="w-6 h-6" /></div>
-                                                <h3 className="text-2xl font-bold text-white">Market Landscape</h3>
-                                            </div>
+                                    {/* SEPARATOR */}
+                                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-                                            {data.competitors && (
-                                                <div className="p-8 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-sm">
-                                                    <div className="h-64 w-full mb-8">
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <BarChart data={data.competitors} layout="vertical">
-                                                                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
-                                                                <XAxis type="number" stroke="#94a3b8" />
-                                                                <YAxis dataKey="name" type="category" width={100} stroke="#94a3b8" tick={{ fontSize: 12, fill: '#cbd5e1' }} />
-                                                                <Tooltip
-                                                                    cursor={{ fill: 'transparent' }}
-                                                                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', color: '#fff' }}
-                                                                />
-                                                                <Bar dataKey="market_share" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={20}>
-                                                                    {data.competitors.map((entry, index) => (
-                                                                        <cell key={`cell-${index}`} fill={index === 0 ? '#f59e0b' : '#ffffff20'} />
-                                                                    ))}
-                                                                </Bar>
-                                                            </BarChart>
-                                                        </ResponsiveContainer>
-                                                    </div>
-                                                    <div className="space-y-3">
-                                                        {data.competitors.map((comp, idx) => (
-                                                            <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-black/40 border border-white/5">
-                                                                <span className="font-bold text-white text-sm">{comp.name}</span>
-                                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${comp.strength === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
-                                                                    {comp.strength} Threat
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                    {/* SECTION 2: NEARBY TALENT */}
+                                    <NearbyTalent data={data.nearbyTalent} />
 
-                                        {/* Right Col: Execution */}
-                                        <div className="space-y-8">
-                                            <div className="flex items-center gap-4 mb-6">
-                                                <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400"><Sparkles className="w-6 h-6" /></div>
-                                                <h3 className="text-2xl font-bold text-white">Execution Resources</h3>
-                                            </div>
-
-                                            <div className="space-y-6">
-                                                <FreelancerList
-                                                    freelancers={data.relevant_freelancers}
-                                                    userLocation={selectedLocation}
-                                                    category={selectedCategory}
-                                                />
-                                                <WorkspaceList workspaces={data.relevant_workspaces} />
-                                            </div>
-                                        </div>
+                                    {/* SECTION 3: SPACE INSIGHTS */}
+                                    <div className="grid grid-cols-1 md:grid-cols-1 gap-12">
+                                        <SpaceInsights data={data.spaceInsights} />
                                     </div>
 
-                                    {/* 4. Investor Guidance (Full Width) */}
-                                    <div className="pt-12 border-t border-white/10">
-                                        <InvestorGuidance guidance={data.investor_guidance} />
+                                    {/* SECTION 4: FUNDING GUIDANCE */}
+                                    <div className="pt-8 border-t border-white/10">
+                                        <FundingGuidance data={data.fundingGuidance} />
                                     </div>
 
                                 </motion.div>
